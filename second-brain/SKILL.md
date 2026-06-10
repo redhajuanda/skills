@@ -17,7 +17,9 @@ Persistent, file-based memory organized by Tiago Forte's PARA method. Three laye
 
 **Precondition:** If `$OBSIDIAN_VAULT` is unset or empty, stop and ask the user for the vault path before doing anything. Never write to relative paths (e.g. `0 Inbox/`, `MEMORY.md`) — an unset var resolves them against the filesystem root.
 
-**Glossary:** A *heartbeat* is a periodic lull in the conversation (e.g. when the user steps away or a task wraps up) used to flush pending memory work — extracting durable facts from daily notes into the knowledge graph and updating access metadata.
+**Glossary:** A *heartbeat* is a checkpoint for flushing pending memory work — extracting durable facts from daily notes into the knowledge graph and updating access metadata. Run one at these concrete moments: when a task wraps up, before ending a turn or session, when the user says goodbye, or at session start if work is pending from last time.
+
+**Dates:** Daily notes and fact timestamps are keyed by date. Always get today's date with `date +%F` — never assume it.
 
 ## Three Memory Layers
 
@@ -42,7 +44,8 @@ $OBSIDIAN_VAULT/
    <topic>/
  4 Archives/        # Inactive items from the other three
  Daily Notes/       # Per-day timeline files (YYYY-MM-DD.md)
- Templates/         # Reusable templates for entities and notes
+ Templates/         # Reusable templates for entities and notes. Check for a
+                    # matching template before creating a new entity file.
  index.md           # Top-level map of the vault: links to active projects,
                     # key entities, and where things live. Rewrite during weekly synthesis.
 ```
@@ -58,7 +61,7 @@ $OBSIDIAN_VAULT/
 **Fact rules:**
 
 - Save durable facts immediately to `items.yaml`.
-- Weekly: rewrite `summary.md` from active facts.
+- Weekly: rewrite `summary.md` from active facts (see [Weekly Synthesis](#weekly-synthesis)).
 - Never delete facts. Supersede instead (`status: superseded`, add `superseded_by`).
 - **Superseding vs. decay are different:** supersede when a fact becomes *wrong* (correctness); decay only lowers a still-true fact's retrieval priority as it ages (see [references/schemas.md](references/schemas.md)). Never use one for the other.
 - When an entity goes inactive, move its folder to `$OBSIDIAN_VAULT/4 Archives/`.
@@ -85,7 +88,7 @@ How the user operates -- patterns, preferences, lessons learned.
 
 - Not facts about the world; facts about the user.
 - Update whenever you learn new operating patterns.
-- **Distinct from Claude Code's own `MEMORY.md` auto-memory** (under `~/.claude/...`), which has a different frontmatter/index format. This layer lives inside the vault and is plain prose. Do not conflate the two.
+- Distinct from any agent-level memory files the harness maintains outside the vault (e.g. Claude Code's auto-memory). This layer lives inside the vault and is plain prose. Do not conflate the two.
 
 ## Worked Example
 
@@ -107,13 +110,13 @@ Memory does not survive session restarts. Files do.
 
 - Want to remember something -> WRITE IT TO A FILE.
 - "Remember this" / "take a note" / "note this" / "note that down" -> update `$OBSIDIAN_VAULT/Daily Notes/YYYY-MM-DD.md` or the relevant entity file.
-- Learn a lesson -> update AGENTS.md, TOOLS.md, or the relevant skill file.
-- Make a mistake -> document it so future-you does not repeat it.
+- Learn a lesson about how the user operates -> update `$OBSIDIAN_VAULT/Tacit Knowledge.md`.
+- Make a mistake -> document it in the daily note so future-you does not repeat it.
 - On-disk text files are always better than holding it in temporary context.
 
 ## Memory Recall -- Use qmd
 
-Use `qmd` rather than grepping files:
+`qmd` is a local CLI for semantic + keyword search over markdown. Prefer it over grepping files:
 
 ```bash
 qmd query "what happened at Christmas"   # Semantic search with reranking
@@ -121,11 +124,23 @@ qmd search "specific phrase"              # BM25 keyword search
 qmd vsearch "conceptual question"         # Pure vector similarity
 ```
 
-Index your personal folder: `qmd index $OBSIDIAN_VAULT`
-
 Vectors + BM25 + reranking finds things even when the wording differs.
+
+- **If `qmd` is not installed** (`command -v qmd` fails), fall back to grep/glob over the vault. Do not block recall on it.
+- **Index** the vault with `qmd index $OBSIDIAN_VAULT`. Re-index after a batch of writes and during weekly synthesis, or results go stale.
+
+## Weekly Synthesis
+
+Run roughly once a week (or when the user asks):
+
+1. Get today's date (`date +%F`) and update access metadata for entities touched recently (see [references/schemas.md](references/schemas.md)).
+2. For each active entity, rewrite `summary.md` from active facts, sorted by recency tier then `access_count`. Cold facts drop out of the summary but stay in `items.yaml`.
+3. Process anything left in `0 Inbox/` into Projects, Areas, or Resources.
+4. Move completed projects and inactive entities to `4 Archives/`.
+5. Rewrite `index.md` so it reflects current active projects and key entities.
+6. Re-index: `qmd index $OBSIDIAN_VAULT` (if qmd is installed).
 
 ## Planning
 
-Keep plans in timestamped files in `plans/` at the project root (outside personal memory so other agents can access them). Plans go stale -- if a newer plan exists, do not confuse yourself with an older version. If you notice staleness, update the file to note what it is supersededBy.
+Keep plans in timestamped files in `plans/` at the root of the code repository you are working in -- not in the vault -- so other agents working on the same project can access them. Plans go stale: if a newer plan exists, do not confuse yourself with an older version. If you notice staleness, add a note to the old file naming the plan that supersedes it.
 

@@ -3,19 +3,22 @@
 ## Atomic Fact Schema (items.yaml)
 
 ```yaml
-- id: entity-001
- fact: "The actual fact"
- category: relationship | milestone | status | preference
- timestamp: "YYYY-MM-DD"
- source: "YYYY-MM-DD"
- status: active # active | superseded
- superseded_by: null # e.g. entity-002
- related_entities:
-   - companies/acme
-   - people/jeff
- last_accessed: "YYYY-MM-DD"
- access_count: 0
+- id: jeff-001
+  fact: "Jeff is the user's manager at Acme"
+  category: relationship              # relationship | milestone | status | preference
+  timestamp: "2026-06-09"             # date the fact was recorded
+  source: "Daily Notes/2026-06-09.md" # where the fact came from (daily note, or a short
+                                      # free-text origin like "user said directly")
+  status: active                      # active | superseded
+  superseded_by: null                 # id of the superseding fact, e.g. jeff-002
+  related_entities:
+    - companies/acme
+    - people/jeff
+  last_accessed: "2026-06-09"
+  access_count: 0
 ```
+
+Ids are unique within an entity's `items.yaml`: prefix with the entity name and number sequentially (`jeff-001`, `jeff-002`, ...).
 
 ## Memory Decay
 

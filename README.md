@@ -6,7 +6,7 @@ Agent Skills — markdown instructions that extend the agent with specialized wo
 
 | Skill | What it's for |
 |-------|---------------|
-| **second-brain** | File-based memory using PARA (Projects, Areas, Resources, Archives). Stores facts, daily notes, and user patterns in an Obsidian vault across sessions. Triggers on "remember this", note-taking, recall, and weekly synthesis. Requires `$OBSIDIAN_VAULT` to be set. |
+| **second-brain** | File-based memory using PARA (Projects, Areas, Resources, Archives). Stores facts, daily notes, and user patterns in an Obsidian vault across sessions. Triggers on "remember this", note-taking, recall, and weekly synthesis. Requires `$OBSIDIAN_VAULT_PATH` to be set. |
 | **lean-fable** | Token-optimized orchestration skill for Claude. Enforces prompt caching layout, line-bounded verification, subagent response compaction, and proactive context pruning to save up to 70% in token costs. |
 
 ## Install

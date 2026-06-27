@@ -13,9 +13,9 @@ description: >
 
 # Second Brain
 
-Persistent, file-based memory organized by Tiago Forte's PARA method. Three layers: a knowledge graph, daily notes, and tacit knowledge. All paths are relative to `$OBSIDIAN_VAULT`. PARA folders live directly under `$OBSIDIAN_VAULT`.
+Persistent, file-based memory organized by Tiago Forte's PARA method. Three layers: a knowledge graph, daily notes, and tacit knowledge. All paths are relative to `$OBSIDIAN_VAULT_PATH`. PARA folders live directly under `$OBSIDIAN_VAULT_PATH`.
 
-**Precondition:** If `$OBSIDIAN_VAULT` is unset or empty, stop and ask the user for the vault path before doing anything. Never write to relative paths (e.g. `0 Inbox/`, `MEMORY.md`) — an unset var resolves them against the filesystem root.
+**Precondition:** If `$OBSIDIAN_VAULT_PATH` is unset or empty, stop and ask the user for the vault path before doing anything. Never write to relative paths (e.g. `0 Inbox/`, `MEMORY.md`) — an unset var resolves them against the filesystem root.
 
 **Glossary:** A *heartbeat* is a checkpoint for flushing pending memory work — extracting durable facts from daily notes into the knowledge graph and updating access metadata. Run one at these concrete moments: when a task wraps up, before ending a turn or session, when the user says goodbye, or at session start if work is pending from last time.
 
@@ -23,7 +23,7 @@ Persistent, file-based memory organized by Tiago Forte's PARA method. Three laye
 
 ## Three Memory Layers
 
-### Layer 1: Knowledge Graph (`$OBSIDIAN_VAULT/` -- PARA)
+### Layer 1: Knowledge Graph (`$OBSIDIAN_VAULT_PATH/` -- PARA)
 
 Entity-based storage. Each entity gets a folder with two tiers:
 
@@ -31,7 +31,7 @@ Entity-based storage. Each entity gets a folder with two tiers:
 2. `items.yaml` -- atomic facts, load on demand.
 
 ```text
-$OBSIDIAN_VAULT/
+$OBSIDIAN_VAULT_PATH/
  0 Inbox/           # Unsorted captures, process into other folders
  1 Projects/        # Active work with clear goals/deadlines
    <name>/
@@ -64,7 +64,7 @@ $OBSIDIAN_VAULT/
 - Weekly: rewrite `summary.md` from active facts (see [Weekly Synthesis](#weekly-synthesis)).
 - Never delete facts. Supersede instead (`status: superseded`, add `superseded_by`).
 - **Superseding vs. decay are different:** supersede when a fact becomes *wrong* (correctness); decay only lowers a still-true fact's retrieval priority as it ages (see [references/schemas.md](references/schemas.md)). Never use one for the other.
-- When an entity goes inactive, move its folder to `$OBSIDIAN_VAULT/4 Archives/`.
+- When an entity goes inactive, move its folder to `$OBSIDIAN_VAULT_PATH/4 Archives/`.
 
 **When to create an entity:**
 
@@ -75,14 +75,14 @@ $OBSIDIAN_VAULT/
 
 For the atomic fact YAML schema and memory decay rules, see [references/schemas.md](references/schemas.md).
 
-### Layer 2: Daily Notes (`$OBSIDIAN_VAULT/Daily Notes/YYYY-MM-DD.md`)
+### Layer 2: Daily Notes (`$OBSIDIAN_VAULT_PATH/Daily Notes/YYYY-MM-DD.md`)
 
 Raw timeline of events -- the "when" layer.
 
 - Write continuously during conversations.
 - Extract durable facts to Layer 1 during heartbeats.
 
-### Layer 3: Tacit Knowledge (`$OBSIDIAN_VAULT/Tacit Knowledge.md`)
+### Layer 3: Tacit Knowledge (`$OBSIDIAN_VAULT_PATH/Tacit Knowledge.md`)
 
 How the user operates -- patterns, preferences, lessons learned.
 
@@ -109,8 +109,8 @@ When the migration ships, move `1 Projects/billing-migration/` to `4 Archives/`.
 Memory does not survive session restarts. Files do.
 
 - Want to remember something -> WRITE IT TO A FILE.
-- "Remember this" / "take a note" / "note this" / "note that down" -> update `$OBSIDIAN_VAULT/Daily Notes/YYYY-MM-DD.md` or the relevant entity file.
-- Learn a lesson about how the user operates -> update `$OBSIDIAN_VAULT/Tacit Knowledge.md`.
+- "Remember this" / "take a note" / "note this" / "note that down" -> update `$OBSIDIAN_VAULT_PATH/Daily Notes/YYYY-MM-DD.md` or the relevant entity file.
+- Learn a lesson about how the user operates -> update `$OBSIDIAN_VAULT_PATH/Tacit Knowledge.md`.
 - Make a mistake -> document it in the daily note so future-you does not repeat it.
 - On-disk text files are always better than holding it in temporary context.
 
@@ -127,7 +127,7 @@ qmd vsearch "conceptual question"         # Pure vector similarity
 Vectors + BM25 + reranking finds things even when the wording differs.
 
 - **If `qmd` is not installed** (`command -v qmd` fails), fall back to grep/glob over the vault. Do not block recall on it.
-- **Index** the vault with `qmd index $OBSIDIAN_VAULT`. Re-index after a batch of writes and during weekly synthesis, or results go stale.
+- **Index** the vault with `qmd index $OBSIDIAN_VAULT_PATH`. Re-index after a batch of writes and during weekly synthesis, or results go stale.
 
 ## Weekly Synthesis
 
@@ -138,7 +138,7 @@ Run roughly once a week (or when the user asks):
 3. Process anything left in `0 Inbox/` into Projects, Areas, or Resources.
 4. Move completed projects and inactive entities to `4 Archives/`.
 5. Rewrite `index.md` so it reflects current active projects and key entities.
-6. Re-index: `qmd index $OBSIDIAN_VAULT` (if qmd is installed).
+6. Re-index: `qmd index $OBSIDIAN_VAULT_PATH` (if qmd is installed).
 
 ## Planning
 

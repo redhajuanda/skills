@@ -1,39 +1,36 @@
-# Schemas and Memory Decay
+# Frontmatter Schema
 
-## Atomic Fact Schema (items.yaml)
+Every note in the vault carries a YAML frontmatter header. This is what makes recall cheap — an agent filters by `type`/`tags` without opening the file (see the Memory Recall section in SKILL.md).
 
 ```yaml
-- id: jeff-001
-  fact: "Jeff is the user's manager at Acme"
-  category: relationship              # relationship | milestone | status | preference
-  timestamp: "2026-06-09"             # date the fact was recorded
-  source: "Daily Notes/2026-06-09.md" # where the fact came from (daily note, or a short
-                                      # free-text origin like "user said directly")
-  status: active                      # active | superseded
-  superseded_by: null                 # id of the superseding fact, e.g. jeff-002
-  related_entities:
-    - companies/acme
-    - people/jeff
-  last_accessed: "2026-06-09"
-  access_count: 0
+---
+type: reference        # REQUIRED. From the fixed vocabulary below.
+title: "Short title"   # human-readable name
+timestamp: 2026-07-01  # date authored (get with `date +%F`, never assume)
+resource:              # optional — url or repo path if the note points at a real asset
+tags: [topic, project] # optional — cross-cutting categorization
+---
 ```
 
-Ids are unique within an entity's `items.yaml`: prefix with the entity name and number sequentially (`jeff-001`, `jeff-002`, ...).
+## `type` vocabulary (fixed — reuse, never invent per-note)
 
-## Memory Decay
+| type        | use for                                            |
+|-------------|----------------------------------------------------|
+| `prd`       | product requirement docs                           |
+| `plan`      | implementation / work plans                        |
+| `project`   | a project entity note (1 Projects)                 |
+| `area`      | an ongoing entity: person, company (2 Areas)       |
+| `reference` | reference material, how-tos, repo summaries        |
+| `daily-log` | daily timeline notes                               |
+| `tacit`     | user operating patterns / preferences              |
+| `note`      | catch-all when nothing else fits                   |
 
-Facts decay in retrieval priority over time so stale info does not crowd out recent context.
+A single fixed vocabulary is the whole point: two notes with the same `type` are guaranteed comparable. If a real need appears that none of these cover, add it here first, then use it — don't coin one-off types inline.
 
-**Access tracking:** When a fact is used in conversation, bump `access_count` and set `last_accessed` to today. During heartbeat extraction, scan the session for referenced entity facts and update their access metadata. This is **best-effort** — if it's skipped, stale `access_count`/`last_accessed` values are acceptable and only make the recency tiers approximate; they never make a fact wrong. Don't block other work to maintain it.
+## Links are edges
 
-**Recency tiers (for summary.md rewriting):**
+Relationships are plain `[[wikilinks]]` in the body or frontmatter (e.g. `project: "[[Capio - Garuda Food]]"`), not a separate schema. A plan links up to its project; an entity links to related entities. Broken links are allowed (OKF permits them) — a link to a note that doesn't exist yet just marks intent.
 
-- **Hot** (accessed in last 7 days) -- include prominently in summary.md.
-- **Warm** (8-30 days ago) -- include at lower priority.
-- **Cold** (30+ days or never accessed) -- omit from summary.md. Still in items.yaml, retrievable on demand.
-- High `access_count` resists decay -- frequently used facts stay warm longer.
+## No deletion
 
-**Weekly synthesis:** Sort by recency tier, then by access_count within tier. Cold facts drop out of the summary but remain in items.yaml. Accessing a cold fact reheats it.
-
-No deletion. Decay only affects retrieval priority via summary.md curation. The full record always lives in items.yaml.
-
+Correct wrong facts in place (note what changed) or move inactive entities to `4 Archives/`. The full history lives in git and the daily notes — never destroy the record.

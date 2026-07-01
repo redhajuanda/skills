@@ -3,9 +3,10 @@ name: second-brain
 description: >
  File-based memory system using Tiago Forte's PARA method. Use this skill whenever
  you need to store, retrieve, update, or organize knowledge across sessions. Covers
- three memory layers: (1) Knowledge graph in PARA folders with atomic YAML facts,
- (2) Daily notes as raw timeline, (3) Tacit knowledge about user patterns. Also
- handles planning files, memory decay, weekly synthesis, and recall via qmd.
+ three memory layers: (1) Knowledge graph of labeled markdown notes in PARA folders,
+ (2) Daily notes as raw timeline, (3) Tacit knowledge about user patterns. Notes
+ carry OKF-style frontmatter (a `type` label) so recall is filter-then-read via the
+ Obsidian CLI or ripgrep. Also handles planning files and weekly synthesis.
  Trigger on any memory operation: saving facts, writing daily notes, creating
  entities, running weekly synthesis, recalling past context, or managing plans.
  Also trigger on: "remember this", "take a note", "note this", "note that down".
@@ -25,18 +26,14 @@ Persistent, file-based memory organized by Tiago Forte's PARA method. Three laye
 
 ### Layer 1: Knowledge Graph (`$OBSIDIAN_VAULT_PATH/` -- PARA)
 
-Entity-based storage. Each entity gets a folder with two tiers:
-
-1. `summary.md` -- quick context, load first.
-2. `items.yaml` -- atomic facts, load on demand.
+Entity-based storage. Each entity is a **labeled markdown note** (or a folder of them for bigger entities). Knowledge lives in the prose + frontmatter; links between notes are the graph edges. This is the OKF pattern: plain markdown, a `type` label, `[[wikilinks]]`.
 
 ```text
 $OBSIDIAN_VAULT_PATH/
  0 Inbox/           # Unsorted captures, process into other folders
  1 Projects/        # Active work with clear goals/deadlines
    <name>/
-     summary.md
-     items.yaml
+     summary.md     # the entity note (or just <name>.md)
  2 Areas/           # Ongoing responsibilities, no end date
    people/<name>/
    companies/<name>/
@@ -44,10 +41,10 @@ $OBSIDIAN_VAULT_PATH/
    <topic>/
  4 Archives/        # Inactive items from the other three
  Daily Notes/       # Per-day timeline files (YYYY-MM-DD.md)
- Templates/         # Reusable templates for entities and notes. Check for a
-                    # matching template before creating a new entity file.
- index.md           # Top-level map of the vault: links to active projects,
-                    # key entities, and where things live. Rewrite during weekly synthesis.
+ Templates/         # Reusable templates. Check for a matching one before
+                    # creating a new note (e.g. Templates/okf-note.md).
+ index.md           # Top-level map: links to active projects and key entities.
+                    # Rewrite during weekly synthesis.
 ```
 
 **PARA rules:**
@@ -58,12 +55,27 @@ $OBSIDIAN_VAULT_PATH/
 - **3 Resources** -- reference material, topics of interest.
 - **4 Archives** -- inactive items from any category.
 
-**Fact rules:**
+#### Frontmatter (every note has a header)
 
-- Save durable facts immediately to `items.yaml`.
-- Weekly: rewrite `summary.md` from active facts (see [Weekly Synthesis](#weekly-synthesis)).
-- Never delete facts. Supersede instead (`status: superseded`, add `superseded_by`).
-- **Superseding vs. decay are different:** supersede when a fact becomes *wrong* (correctness); decay only lowers a still-true fact's retrieval priority as it ages (see [references/schemas.md](references/schemas.md)). Never use one for the other.
+Give every note a header so it's filterable without opening it — this is what makes [recall](#memory-recall----filter-by-label-then-read) cheap.
+
+```yaml
+---
+type: reference        # required — from the fixed vocab below
+title: "Short title"
+timestamp: 2026-07-01  # date authored (get it with `date +%F`, never assume)
+resource:              # optional — url/repo if the note points at a real asset
+tags: [topic, project]
+---
+```
+
+- **`type` vocabulary (fixed — reuse, don't invent):** `prd, plan, reference, area, project, daily-log, tacit, note`.
+- Link related notes with `[[wikilinks]]` — that's the graph. A plan links to its project; a summary links to its area.
+
+**Knowledge rules:**
+
+- Save durable knowledge to its entity note immediately; capture raw events to the daily note.
+- Never delete a fact that turns out wrong -- correct it in place and note what changed, or mark it superseded. Losing the record is worse than a stale line.
 - When an entity goes inactive, move its folder to `$OBSIDIAN_VAULT_PATH/4 Archives/`.
 
 **When to create an entity:**
@@ -73,7 +85,7 @@ $OBSIDIAN_VAULT_PATH/
 - Significant project or company in the user's life.
 - Otherwise, note it in daily notes.
 
-For the atomic fact YAML schema and memory decay rules, see [references/schemas.md](references/schemas.md).
+For the frontmatter schema, see [references/schemas.md](references/schemas.md).
 
 ### Layer 2: Daily Notes (`$OBSIDIAN_VAULT_PATH/Daily Notes/YYYY-MM-DD.md`)
 
@@ -96,11 +108,10 @@ User says: *"Had a 1:1 with my manager Jeff at Acme today — he wants me to lea
 
 1. **Capture to the daily note** (`Daily Notes/2026-06-09.md`): append a timeline entry — `- 1:1 with Jeff (manager). Asked me to lead the billing migration, due end of Q3.`
 2. **Decide on entities.** Jeff (direct relationship → manager) and Acme (significant company) both qualify. The billing migration is a project with a goal + deadline.
-3. **Create/update entities:**
-  - `2 Areas/people/jeff/items.yaml` → fact: `"Jeff is the user's manager at Acme"` (category: `relationship`).
-  - `1 Projects/billing-migration/items.yaml` → facts: `"User leads the billing migration"` (category: `status`), `"Billing migration is due end of Q3 2026"` (category: `milestone`). Add `related_entities: [people/jeff, companies/acme]`.
-  - Write a short `summary.md` for the project if it doesn't exist.
-4. **At the next heartbeat**, confirm the facts landed in `items.yaml` and bump access metadata on any entity referenced this session.
+3. **Create/update entities** (each a labeled markdown note with frontmatter):
+  - `2 Areas/people/jeff/summary.md` (`type: area`) → "Jeff is the user's manager at Acme." Link `[[Acme]]`.
+  - `1 Projects/billing-migration/summary.md` (`type: project`) → "User leads the billing migration, due end of Q3 2026." Link `[[Jeff]]`, `[[Acme]]`.
+4. **At the next heartbeat**, confirm the notes were written and the links resolve.
 
 When the migration ships, move `1 Projects/billing-migration/` to `4 Archives/`.
 
@@ -114,31 +125,41 @@ Memory does not survive session restarts. Files do.
 - Make a mistake -> document it in the daily note so future-you does not repeat it.
 - On-disk text files are always better than holding it in temporary context.
 
-## Memory Recall -- Use qmd
+## Memory Recall -- filter by label, then read
 
-`qmd` is a local CLI for semantic + keyword search over markdown. Prefer it over grepping files:
+Every note carries a `type` label (see [Frontmatter](#frontmatter-every-note-has-a-header)), so recall is: **narrow to filenames by property, then read only the hits.**
+
+**Preferred: Obsidian CLI** (the `obsidian` command; requires the Obsidian app to be running).
 
 ```bash
-qmd query "what happened at Christmas"   # Semantic search with reranking
-qmd search "specific phrase"              # BM25 keyword search
-qmd vsearch "conceptual question"         # Pure vector similarity
+obsidian search query='["type":plan]' format=text     # by property — NOTE the bracket form
+obsidian search query='billing migration' format=text  # word-based content search
+obsidian backlinks file="Acme" format=tsv              # what links to an entity
+obsidian tags                                           # list all tags
 ```
 
-Vectors + BM25 + reranking finds things even when the wording differs.
+- The property filter **must** use the bracket form `["type":plan]`. Plain `type:plan` errors.
+- `format=text` returns bare file paths — cheap to scan; open only the matches.
+- If `obsidian` is not installed (`command -v obsidian` fails), **ask the user whether to install it**. Until then, use the fallback.
 
-- **If `qmd` is not installed** (`command -v qmd` fails), fall back to grep/glob over the vault. Do not block recall on it.
-- **Index** the vault with `qmd index $OBSIDIAN_VAULT_PATH`. Re-index after a batch of writes and during weekly synthesis, or results go stale.
+**Fallback: ripgrep** (works with the app closed / in scripts):
+
+```bash
+rg -l '^type: plan' "$OBSIDIAN_VAULT_PATH"              # by label
+rg -l '\[\[Acme\]\]' "$OBSIDIAN_VAULT_PATH"             # backlinks (text match)
+rg -n 'ACL|permission' "$OBSIDIAN_VAULT_PATH"           # content with line numbers
+```
+
+`$OBSIDIAN_VAULT_PATH` has spaces — always quote it, and never `$(rg -l ...)` unquoted (it word-splits on the path). Use `rg -l --null ... | while IFS= read -r -d '' f; do ...; done`.
 
 ## Weekly Synthesis
 
 Run roughly once a week (or when the user asks):
 
-1. Get today's date (`date +%F`) and update access metadata for entities touched recently (see [references/schemas.md](references/schemas.md)).
-2. For each active entity, rewrite `summary.md` from active facts, sorted by recency tier then `access_count`. Cold facts drop out of the summary but stay in `items.yaml`.
-3. Process anything left in `0 Inbox/` into Projects, Areas, or Resources.
-4. Move completed projects and inactive entities to `4 Archives/`.
-5. Rewrite `index.md` so it reflects current active projects and key entities.
-6. Re-index: `qmd index $OBSIDIAN_VAULT_PATH` (if qmd is installed).
+1. Process anything left in `0 Inbox/` into Projects, Areas, or Resources.
+2. For each active entity, trim its `summary.md` to what's still relevant — drop stale detail (it stays in the daily notes / git history if ever needed).
+3. Move completed projects and inactive entities to `4 Archives/`.
+4. Rewrite `index.md` so it reflects current active projects and key entities.
 
 ## Planning
 

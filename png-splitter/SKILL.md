@@ -10,7 +10,8 @@ Use this skill when the user has one PNG with multiple disconnected objects on a
 ## Workflow
 
 1. Confirm the source file path.
-2. From this skill directory, run the CLI:
+2. Check whether the image already has real transparency: `magick identify -format "%A" input.png` (prints `True`/`Blend` if an alpha channel is present). If it does, skip the matting/background-removal step entirely — go straight to step 3 on the original file.
+3. From this skill directory, run the CLI:
 
 ```bash
 python3 -m scripts /absolute/path/to/input.png
@@ -35,6 +36,7 @@ python3 -m scripts /absolute/path/to/input.png --padding 24 --min-pixels 400 --a
 - Raise `--min-pixels` to drop dust or tiny fragments.
 - Raise `--alpha-threshold` when soft shadows or nearly invisible pixels should be ignored.
 - Raise `--padding` when the crops feel too tight.
+- Only run background removal/matting when the image has no real alpha transparency (an opaque PNG, or one with a fake baked-in checkerboard pattern). If the alpha channel already carries real transparency, matting is unnecessary — split it directly.
 - If the image has no transparency but a fake checkerboard background (baked-in checker pixels), run the bundled matting tool first, then split its output:
 
 ```bash

@@ -22,6 +22,8 @@ Outputs go to `<input-stem>_split/` (or `--output-dir`) alongside a `manifest.js
 | `--background-mode` | `alpha` | `alpha` uses transparency; `auto` also strips near-background edge colors on opaque images |
 | `--background-threshold` | `18` | Color distance used by `--background-mode auto` |
 
+If the input already has a real alpha channel (`magick identify -format "%A" input.png` prints `True`/`Blend`), skip matting entirely and go straight to the split command above.
+
 ### Baked-in checkerboard background (no real transparency)
 
 ```bash

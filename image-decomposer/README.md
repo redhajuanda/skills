@@ -1,4 +1,4 @@
-# image-asset-decomposer
+# image-decomposer
 
 Generates a copy-paste prompt for AI image generators (ChatGPT, Gemini, etc.) that decomposes one illustration into animation-ready layers: a single static background plate plus individual transparent-PNG cutouts of every movable element.
 
@@ -22,5 +22,5 @@ Trigger it when you want to:
 ## Install
 
 ```bash
-npx skills add redhajuanda/skills --skill image-asset-decomposer
+npx skills add redhajuanda/skills --skill image-decomposer
 ```

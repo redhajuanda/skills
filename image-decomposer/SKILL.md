@@ -1,5 +1,5 @@
 ---
-name: image-asset-decomposer
+name: image-decomposer
 description: Generate a copy-paste prompt for AI image generators (ChatGPT, Gemini, etc.) that decomposes a single illustration into animation-ready layers - one static background plate plus individual transparent-PNG cutouts of every movable element. Use this skill whenever the user wants to split, strip, un-layer, or decompose an image into separate objects/assets/sprites/layers, wants a sprite sheet or asset breakdown from an illustration, wants to prepare an image for parallax or motion graphics animation, or asks for "the decomposition prompt" / "the asset extraction prompt". Also use it when the user shows a decomposition result and asks to fix issues like duplicated elements, wrong background contents, or merged assets.
 ---
 

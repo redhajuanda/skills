@@ -9,7 +9,7 @@ Agent Skills — markdown instructions that extend the agent with specialized wo
 | **second-brain** | File-based memory using PARA (Projects, Areas, Resources, Archives). Stores facts, daily notes, and user patterns in an Obsidian vault across sessions. Triggers on "remember this", note-taking, recall, and weekly synthesis. Requires `$OBSIDIAN_VAULT_PATH` to be set. |
 | **lean-fable** | Token-optimized orchestration skill for Claude. Enforces prompt caching layout, line-bounded verification, subagent response compaction, and proactive context pruning to save up to 70% in token costs. |
 | **png-splitter** | Splits one PNG with a transparent background into multiple standalone cropped PNGs, one per disconnected object. Includes an ML-assisted matting fallback for baked-in checkerboard backgrounds. |
-| **image-asset-decomposer** | Generates a copy-paste prompt for AI image generators that decomposes one illustration into an animation-ready background plate plus individual transparent cutouts. |
+| **image-decomposer** | Generates a copy-paste prompt for AI image generators that decomposes one illustration into an animation-ready background plate plus individual transparent cutouts. |
 
 ## Install
 

@@ -22,5 +22,5 @@ Trigger it when you want to:
 ## Install
 
 ```bash
-npx skills add redhajuanda/skills --skill image-decomposer
+npx skills add redhajuanda/skills --skill image-asset-decomposer
 ```
